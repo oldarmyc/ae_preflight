@@ -1,26 +1,39 @@
+#!/usr/bin/env python
 
-from setuptools import setup
-from setuptools import find_packages
+import setuptools
+import sys
 
 
-setup(
+requirements = ['psutil']
+if sys.version_info[:2] < (2, 7):
+    requirements.append('argparse')
+
+
+test_requirements = ['mock', 'nose']
+if sys.version_info[:2] < (2, 7):
+    test_requirements.extend(['flake8 < 3', 'unittest2'])
+else:
+    test_requirements.append('flake8')
+
+
+setuptools.setup(
     name='aepreflight',
     version='0.1.0',
     url='https://github.com/oldarmyc/ae_preflight.git',
-    license='BSD',
+    license='Apache License, Version 2.0',
     author='Dave Kludt',
     author_email='dkludt@anaconda.com',
-    description='Library to interact with swift containers',
-    packages=find_packages(),
-    include_package_data=True,
+    description='Library to run preflight checks before installing AE',
     zip_safe=False,
     platforms='any',
-    install_requires=['psutil'],
+    install_requires=requirements,
+    extras_require={
+        'tests': test_requirements
+    },
     classifiers=[
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',
+        'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Topic :: Software Development :: Libraries :: Python Modules'
+        'Programming Language :: Python'
     ]
 )
