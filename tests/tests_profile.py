@@ -9,10 +9,10 @@ else:
     from unittest2 import TestCase
 
 
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+# try:
+#     from unittest import mock
+# except ImportError:
+#     import mock
 
 
 class TestProfile(TestCase):
@@ -24,7 +24,4 @@ class TestProfile(TestCase):
 
     def test_version(self):
         # Sample test to ensure things all run
-        with mock.patch('profile.re'):
-            pass
-
         assert True
