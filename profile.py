@@ -84,11 +84,11 @@ def execute_command(command, verbose):
 
     p = Popen(command, stdout=PIPE, stderr=PIPE, stdin=PIPE)
     out, err = p.communicate()
-    if p.returncode != 0:
+    if p.returncode != 0 and verbose:
         log.error(
             'Error executing command "{0}" : Error {1}'.format(
                 ' '.join(command),
-                err
+                err.decode('utf-8')
             )
         )
 
