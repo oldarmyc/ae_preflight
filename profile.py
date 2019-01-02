@@ -645,7 +645,7 @@ def process_results(system_info):
             f.write(
                 'WARNING: These agents have been known to cause issues with '
                 'the system as it could block traffic, or change settings '
-                'that are needed by Anaconda Enterprise to function properly'
+                'that are needed by Anaconda Enterprise to function properly\n'
             )
         else:
             f.write('No running agents found\n')
@@ -670,6 +670,13 @@ def process_results(system_info):
             for module in modules.get('missing'):
                 f.write('{0}\n'.format(module))
 
+            f.write(
+                '\nHOW TO\nTo enable a module you can do the following as '
+                'root:\nmodprobe MODEULE_NAME\n\nTo persist through a reboot '
+                'do the following as root:\necho -e "MODULE_NAME" > '
+                '/etc/modules-load.d/MODULE_NAME.conf\n'
+            )
+
         f.write('\nModule Result: {0}\n\n'.format(module_result))
         f.write('---------------------------------------------------------\n')
 
@@ -684,6 +691,11 @@ def process_results(system_info):
             f.write('Result: {0}\n\n'.format(infinity_result))
             if infinity_result == 'FAIL':
                 overall_result = 'FAIL'
+                f.write(
+                    'HOW TO\nTo enable infinity on SUSE then add the '
+                    'following to /etc/systemd/system.conf:\n'
+                    'DefaultTasksMax=infinity\n\n'
+                )
 
             f.write(
                 '---------------------------------------------------------\n'
@@ -706,6 +718,12 @@ def process_results(system_info):
         f.write('\nSysctl Result: {0}\n\n'.format(sysctl_result))
         if sysctl_result == 'FAIL':
             overall_result = 'FAIL'
+            f.write(
+                'HOW TO\nTo enable a setting you can do the following as root:'
+                '\nsysctl -w SYSCTL_SETTING=1\n\nTo persist through a reboot '
+                'do the following as root:\necho -e "SYSCTL_SETTING = 1" '
+                '>> /etc/sysctl.d/10-SYSCTL_SETTING.conf"\n\n'
+            )
 
         f.write('=========================================================\n')
 
