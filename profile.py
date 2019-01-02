@@ -65,7 +65,7 @@ DEFAULT_SYSCTL = [
     'fs.may_detach_mounts',
     'net.ipv4.ip_forward'
 ]
-OPEN_PORTS = [80, 443, 32009, 61009]
+OPEN_PORTS = [80, 443, 32009, 61009, 65535]
 RUNNING_AGENTS = [
     'salt',
     'puppet',
