@@ -18,19 +18,12 @@ log = logging.getLogger(__name__)
 OS_VALUES = {
     'rhel': {
         'versions': ['7.2', '7.3', '7.4', '7.5'],
-        'selinux': True,
-        'sysctl': '/etc/sysctl.d',
-        'modules': '/etc/modules-load.d'
     },
     'debian': {
         'versions': ['16.04'],
-        'sysctl': '/etc/sysctl.d',
-        'modules': '/etc/modules-load.d'
     },
     'suse': {
         'versions': ['12 SP2', '12 SP3'],
-        'sysctl': '/etc/sysctl.d',
-        'modules': '/etc/modules-load.d'
     }
 }
 DEFAULT_MODULES = [
