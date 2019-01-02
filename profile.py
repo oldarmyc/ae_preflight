@@ -151,6 +151,7 @@ def get_os_info(verbose):
         print('Gathering OS and distribution information')
 
     linux_info = distro.distro_release_info()
+    # On SUSE distro_release_info gives an empty {} so get the info another way
     if linux_info == {}:
         linux_info = distro.os_release_info()
 
