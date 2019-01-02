@@ -454,9 +454,12 @@ def check_sysctl(verbose):
             ['sysctl', setting],
             verbose
         ).decode('utf-8')
-        result = temp_result.split('=')[1].strip()
-        if str(result) == '1':
-            enabled.append(setting)
+        if temp_result:
+            result = temp_result.split('=')[1].strip()
+            if str(result) == '1':
+                enabled.append(setting)
+            else:
+                disabled.append(setting)
         else:
             disabled.append(setting)
 
