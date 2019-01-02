@@ -3,11 +3,11 @@ from subprocess import Popen
 from subprocess import PIPE
 
 
-import platform
 import argparse
 import logging
 import socket
 import psutil
+import distro
 import os
 import re
 
@@ -150,21 +150,24 @@ def get_os_info(verbose):
     if verbose:
         print('Gathering OS and distribution information')
 
-    linux_info = platform.linux_distribution()
+    linux_info = distro.distro_release_info()
+    if linux_info.get('version_id'):
+        temp_version = linux_info.get('version_id').split('.')
+        if temp_version:
+            version = '{0}.{1}'.format(temp_version[0], temp_version[1])
+        else:
+            version = 'UNK'
 
-    profile['distribution'] = platform.dist()[0]
-    temp_version = linux_info[1].split('.')
-    version = '{0}.{1}'.format(temp_version[0], temp_version[1])
+    profile['distribution'] = linux_info.get('id')
     profile['version'] = version
-    profile['dist_name'] = linux_info[2]
-    profile['machine'] = platform.machine()
+    profile['dist_name'] = linux_info.get('name')
 
     based_on = None
     if os.path.isfile('/etc/redhat-release'):
         based_on = 'rhel'
     elif os.path.isfile('/etc/debian_version'):
         based_on = 'debian'
-    elif os.path.isfile('/etc/SuSE-release'):
+    elif os.path.isfile('/etc/os-release'):
         based_on = 'suse'
 
     profile['based_on'] = based_on
