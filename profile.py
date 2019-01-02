@@ -547,25 +547,30 @@ def process_results(system_info):
         f.write('---------------------------------------------------------\n')
 
         # Selinux
-        selinux = system_info['selinux']
-        selinux_result = 'FAIL'
-        f.write('\nSelinux Status\n')
-        f.write(
-            'Current Status: {0}\n'.format(selinux.get('getenforce').title())
-        )
-        f.write(
-            'Config Setting: {0}\n'.format(selinux.get('config').title())
-        )
+        if system_info.get('profile').get('based_on').lower() == 'rhel':
+            selinux = system_info['selinux']
+            selinux_result = 'FAIL'
+            f.write('\nSelinux Status\n')
+            f.write(
+                'Current Status: {0}\n'.format(
+                    selinux.get('getenforce').title()
+                )
+            )
+            f.write(
+                'Config Setting: {0}\n'.format(selinux.get('config').title())
+            )
 
-        if (
-            selinux.get('config').lower() != 'enabled' and
-            selinux.get('getenforce').lower() != 'enabled'
-        ):
-            selinux_result = 'PASS'
+            if (
+                selinux.get('config').lower() != 'enabled' and
+                selinux.get('getenforce').lower() != 'enabled'
+            ):
+                selinux_result = 'PASS'
 
-        f.write('Selinux Result: {0}\n\n'.format(selinux_result))
-        if selinux_result == 'FAIL':
-            overall_result = 'FAIL'
+            f.write('Selinux Result: {0}\n\n'.format(selinux_result))
+            if selinux_result == 'FAIL':
+                overall_result = 'FAIL'
+        else:
+            f.write('\nSelinux Result: SKIPPED\n\n')
 
         f.write('---------------------------------------------------------\n')
 
@@ -757,7 +762,6 @@ def main():
     )
     system_info['resources'] = system_requirements(args.verbose)
     system_info['mounts'] = mounts_check(args.verbose)
-    system_info['selinux'] = selinux(args.verbose)
     system_info['resolv'] = inspect_resolv_conf(args.verbose)
     system_info['ports'] = check_open_ports(args.interface, args.verbose)
     system_info['agents'] = check_for_agents(args.verbose)
@@ -766,6 +770,9 @@ def main():
         system_info.get('profile').get('version'),
         args.verbose
     )
+
+    if system_info.get('profile').get('based_on').lower() == 'rhel':
+        system_info['selinux'] = selinux(args.verbose)
 
     system_info['infinity_set'] = None
     if system_info.get('profile').get('distribution').lower() == 'suse':
