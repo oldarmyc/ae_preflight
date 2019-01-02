@@ -557,8 +557,8 @@ def process_results(system_info):
             )
 
             if (
-                selinux.get('config').lower() != 'enabled' and
-                selinux.get('getenforce').lower() != 'enabled'
+                selinux.get('config').lower() != 'enforcing' and
+                selinux.get('getenforce').lower() != 'enforcing'
             ):
                 selinux_result = 'PASS'
 
