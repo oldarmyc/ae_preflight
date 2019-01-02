@@ -22,7 +22,7 @@ OS_VALUES = {
         'sysctl': '/etc/sysctl.d',
         'modules': '/etc/modules-load.d'
     },
-    'ubuntu': {
+    'debian': {
         'versions': ['16.04'],
         'sysctl': '/etc/sysctl.d',
         'modules': '/etc/modules-load.d'
@@ -64,7 +64,6 @@ DEFAULT_SYSCTL = [
     'net.bridge.bridge-nf-call-iptables',
     'fs.may_detach_mounts',
     'net.ipv4.ip_forward'
-
 ]
 OPEN_PORTS = [80, 443, 32009, 61009]
 RUNNING_AGENTS = [
