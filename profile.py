@@ -151,12 +151,16 @@ def get_os_info(verbose):
         print('Gathering OS and distribution information')
 
     linux_info = distro.distro_release_info()
+    if linux_info == {}:
+        linux_info = distro.os_release_info()
+
+    version = 'UNK'
     if linux_info.get('version_id'):
         temp_version = linux_info.get('version_id').split('.')
-        if temp_version:
+        if len(temp_version) > 1:
             version = '{0}.{1}'.format(temp_version[0], temp_version[1])
         else:
-            version = 'UNK'
+            version = temp_version[0]
 
     profile['distribution'] = linux_info.get('id')
     profile['version'] = version
