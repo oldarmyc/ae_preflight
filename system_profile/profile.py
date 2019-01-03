@@ -4,15 +4,11 @@ from subprocess import PIPE
 
 
 import argparse
-import logging
 import socket
 import psutil
 import distro
 import os
 import re
-
-
-log = logging.getLogger(__name__)
 
 
 OS_VALUES = {
@@ -59,6 +55,7 @@ DEFAULT_SYSCTL = [
     'net.ipv4.ip_forward'
 ]
 OPEN_PORTS = [80, 443, 32009, 61009, 65535]
+FILE_TYPES = ['xfs', 'ext4']
 RUNNING_AGENTS = [
     'salt',
     'puppet',
@@ -74,17 +71,15 @@ def execute_command(command, verbose):
     """
     if verbose:
         print('Executing command: "{0}"'.format(' '.join(command)))
-
     p = Popen(command, stdout=PIPE, stderr=PIPE, stdin=PIPE)
     out, err = p.communicate()
     if p.returncode != 0 and verbose:
-        log.error(
+        print(
             'Error executing command "{0}" : Error {1}'.format(
                 ' '.join(command),
                 err.decode('utf-8')
             )
         )
-
     return out
 
 
@@ -221,48 +216,45 @@ def mounts_check(verbose):
     /opt
     /opt/anaconda
     """
-    found_mounts = []
-    possible_mounts = [
-        '/opt/anaconda',
-        '/var/lib/gravity',
-        '/tmp'
-    ]
+    found_mounts = {}
     if verbose:
         print('Gather mount and space requirements for each mount')
 
-    for mount in possible_mounts:
-        if os.path.ismount(mount):
-            found_mounts.append(mount)
-        else:
-            if 'opt' in mount:
-                if os.path.ismount('/opt'):
-                    found_mounts.append('/opt')
-
-            if 'var' in mount:
-                if os.path.ismount('/var/lib'):
-                    found_mounts.append('/var/lib')
-                elif os.path.ismount('/var'):
-                    found_mounts.append('/var')
-
-    if len(found_mounts) == 0:
-        found_mounts.append('/')
+    for mount in psutil.disk_partitions():
+        if (
+            'var' in mount.mountpoint or
+            'opt' in mount.mountpoint or
+            mount.mountpoint == '/'
+        ):
+            found_mounts[mount.mountpoint] = {
+                'options': mount.opts,
+                'file_system': mount.fstype
+            }
 
     mounts = {}
-    for mount in found_mounts:
-        mounts[mount] = {}
-        temp = os.statvfs(mount)
-        mounts[mount]['free'] = round(
-            ((temp.f_bfree * temp.f_bsize) / 1024.0**3),
-            2
-        )
-        if 'tmp' in mount:
-            mounts[mount]['recommended'] = 30.0
-        elif 'var' in mount:
-            mounts[mount]['recommended'] = 100.0
-        elif 'opt' in mount:
-            mounts[mount]['recommended'] = 100.0
+    for mountpoint, mount_data in found_mounts.items():
+        mounts[mountpoint] = {}
+        temp_usage = psutil.disk_usage(mountpoint)
+        mounts[mountpoint]['free'] = round((temp_usage.free / 1024.0**3), 2)
+        mounts[mountpoint]['total'] = round((temp_usage.total / 1024.0**3), 2)
+        mounts[mountpoint]['mount_options'] = mount_data.get('options')
+        mounts[mountpoint]['file_system'] = mount_data.get('file_system')
+        if 'tmp' in mountpoint:
+            mounts[mountpoint]['recommended'] = 30.0
+        elif 'var' in mountpoint:
+            mounts[mountpoint]['recommended'] = 100.0
+        elif 'opt' in mountpoint:
+            mounts[mountpoint]['recommended'] = 100.0
         else:
-            mounts[mount]['recommended'] = 230.0
+            mounts[mountpoint]['recommended'] = 230.0
+
+        if mount_data.get('file_system') == 'xfs':
+            mount_info = execute_command(['xfs_info', mountpoint], verbose)
+            ftype_test = re.search(r'ftype=(\d)', mount_info)
+            if ftype_test:
+                mounts[mountpoint]['ftype'] = ftype_test.group(1)
+            else:
+                mounts[mountpoint]['ftype'] = 'UNK'
 
     return mounts
 
@@ -482,14 +474,14 @@ def process_results(system_info):
         # Compatability and basic system info
         profile = system_info['profile']
         f.write('\nOS Information\n')
-        f.write('Name: {0}\n'.format(profile.get('distribution').title()))
-        f.write('Version: {0}\n'.format(profile.get('version')))
+        f.write('Name:     {0}\n'.format(profile.get('distribution').title()))
+        f.write('Version:  {0}\n'.format(profile.get('version')))
         f.write('Based On: {0}\n\n'.format(profile.get('based_on')))
         f.write('---------------------------------------------------------\n')
 
         compatability = system_info['compatability']
         f.write('\nCompatability\n')
-        f.write('Supported OS: {0}\n'.format(compatability['OS']))
+        f.write('Supported OS:      {0}\n'.format(compatability['OS']))
         f.write('Supported Version: {0}\n\n'.format(compatability['version']))
         if compatability['OS'] == 'FAIL' or compatability['version'] == 'FAIL':
             overall_result = 'FAIL'
@@ -500,12 +492,12 @@ def process_results(system_info):
         memory = resources.get('memory')
         f.write('\nMemory\n')
         f.write('Minimum: {0}\n'.format(memory.get('minimum')))
-        f.write('Actual: {0}\n'.format(memory.get('actual')))
+        f.write('Actual:  {0}\n'.format(memory.get('actual')))
         memory_result = 'FAIL'
         if memory.get('actual') >= memory.get('minimum'):
             memory_result = 'PASS'
 
-        f.write('Memory: {0}\n\n'.format(memory_result))
+        f.write('Memory:  {0}\n\n'.format(memory_result))
         if memory_result == 'FAIL':
             overall_result = 'FAIL'
 
@@ -515,8 +507,8 @@ def process_results(system_info):
         cores = resources.get('cpu_cores')
         core_result = 'FAIL'
         f.write('\nCPU Cores\n')
-        f.write('Minimum: {0}\n'.format(cores.get('minimum')))
-        f.write('Actual: {0}\n'.format(cores.get('actual')))
+        f.write('Minimum:  {0}\n'.format(cores.get('minimum')))
+        f.write('Actual:   {0}\n'.format(cores.get('actual')))
         if cores.get('actual') >= cores.get('minimum'):
             core_result = 'PASS'
 
@@ -529,24 +521,70 @@ def process_results(system_info):
         # Mounts
         mounts = system_info['mounts']
         f.write('\nMounts\n')
+        overall_mount_result = 'WARN'
         for mount, mount_data in mounts.items():
-            mount_result = 'FAIL'
-            f.write('Mount Point: {0}\n'.format(mount))
+            mount_result = 'WARN'
+            f.write('Mount Point:  {0}\n'.format(mount))
             f.write(
-                'Recommended Space: {0} GB\n'.format(
+                'Recommended:  {0} GB\n'.format(
                     mount_data.get('recommended')
                 )
             )
             f.write(
-                'Free Space: {0} GB\n'.format(mount_data.get('free'))
+                'Total:        {0} GB\n'.format(mount_data.get('total'))
             )
 
-            if mount_data.get('free') >= mount_data.get('recommended'):
-                mount_result = 'PASS'
+            f.write(
+                'Free:         {0} GB\n\n'.format(mount_data.get('free'))
+            )
+            f.write(
+                'File System:  {0}\n'.format(
+                    mount_data.get('file_system')
+                )
+            )
+            if mount_data.get('file_system') == 'xfs':
+                f.write(
+                    'Ftype:        {0}\n'.format(mount_data.get('ftype'))
+                )
+
+            # Check to ensure the free space and file system pass
+            if (
+                mount_data.get('free') >= mount_data.get('recommended') and
+                mount_data.get('file_system') in FILE_TYPES
+            ):
+                # Check for xfs and if not then pass
+                if mount_data.get('file_system') == 'xfs':
+                    # Ensure that the ftype was set correctly
+                    if mount_data.get('ftype') == '1':
+                        mount_result = 'PASS'
+                else:
+                    mount_result = 'PASS'
 
             f.write('Mount Result: {0}\n\n'.format(mount_result))
-            if mount_result == 'FAIL':
-                overall_result = 'FAIL'
+            overall_mount_result = mount_result
+
+        if overall_mount_result == 'WARN':
+            f.write(
+                'Note: The free space may have fallen below specific size '
+                'requirements due to reserve space and/or small files placed '
+                'on the mount after formatting. Confirm that the size is '
+                'close to the requested size before proceeding.\n\n'
+            )
+            if (
+                mount_data.get('file_system') == 'xfs' and
+                mount_data.get('ftype') != '1'
+            ):
+                f.write(
+                    'Note: XFS file system should be formatted with the '
+                    'option ftype=1 in order to support the overlay driver '
+                    ' for docker. In order to fix the issue the file system '
+                    'will need to be recreated and can be done using the '
+                    'following example:\nmkfs.xfs -n ftype=1 '
+                    '/path/to/your/device\n\n'
+                )
+
+        if overall_result == 'PASS' and overall_mount_result == 'WARN':
+            overall_result = 'WARN'
 
         f.write('---------------------------------------------------------\n')
 
