@@ -4,7 +4,7 @@ import setuptools
 import sys
 
 
-requirements = ['psutil']
+requirements = ['psutil', 'distro']
 if sys.version_info[:2] < (2, 7):
     requirements.append('argparse')
 
