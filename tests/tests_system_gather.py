@@ -4,7 +4,6 @@ from system_profile import profile
 
 
 import system_profile
-import logging
 import psutil
 import sys
 
@@ -23,10 +22,10 @@ except ImportError:
 
 class TestSystemProfile(TestCase):
     def setUp(self):
-        logging.disable(logging.ERROR)
+        pass
 
     def tearDown(self):
-        logging.disable(logging.NOTSET)
+        pass
 
     def test_version(self):
         self.assertEquals(
@@ -54,9 +53,9 @@ class TestSystemProfile(TestCase):
         test_command = ['getenforce']
         selinux_status = None
         with mock.patch('system_profile.profile.Popen') as popen:
-            popen.return_value.communicate.return_value = ('', 'Error')
+            popen.return_value.communicate.return_value = ('', b'Error')
             popen.return_value.returncode = 1
-            selinux_status = profile.execute_command(test_command, False)
+            selinux_status = profile.execute_command(test_command, True)
 
         self.assertEqual(
             selinux_status,
@@ -83,7 +82,7 @@ class TestSystemProfile(TestCase):
         port_status = 'Not Tested'
         with mock.patch('system_profile.profile.socket') as sock:
             sock.socket.return_value.connect_ex.return_value = 0
-            port_status = profile.check_for_socket('eth0', '80', False)
+            port_status = profile.check_for_socket('eth0', '80', True)
 
         self.assertEquals(
             port_status,
@@ -307,14 +306,73 @@ class TestSystemProfile(TestCase):
             'Returns do not match expected result'
         )
 
+    def test_disk_space_unkown_ftype(self):
+        expected_output = {
+            '/': {
+                'recommended': 0.0,
+                'free': 198.13,
+                'total': 199.7,
+                'mount_options': 'rw,inode64,noquota',
+                'file_system': 'xfs',
+                'ftype': 'UNK'
+            },
+            '/tmp': {
+                'recommended': 30.0,
+                'free': 198.13,
+                'total': 199.7,
+                'mount_options': 'rw,inode64,noquota',
+                'file_system': 'ext4'
+            },
+            '/opt/anaconda': {
+                'recommended': 100.0,
+                'free': 198.13,
+                'total': 199.7,
+                'mount_options': 'rw,inode64,noquota',
+                'file_system': 'ext4'
+            },
+            '/var': {
+                'recommended': 100.0,
+                'free': 198.13,
+                'total': 199.7,
+                'mount_options': 'rw,inode64,noquota',
+                'file_system': 'ext4'
+            }
+        }
+        mock_response = mock.Mock()
+        mock_response.side_effect = [
+            command_returns.psutil_disk_usage(),
+            command_returns.psutil_disk_usage(),
+            command_returns.psutil_disk_usage(),
+            command_returns.psutil_disk_usage(),
+        ]
+        with mock.patch(
+            'system_profile.profile.psutil.disk_partitions'
+        ) as part:
+            part.return_value = command_returns.psutil_disk_partitions()
+            with mock.patch(
+                'system_profile.profile.psutil.disk_usage',
+                side_effect=mock_response
+            ):
+                with mock.patch(
+                    'system_profile.profile.execute_command'
+                ) as command:
+                    command.return_value = b''
+                    returns = profile.mounts_check(True)
+
+        self.assertEquals(
+            expected_output,
+            returns,
+            'Returns do not match expected result'
+        )
+
     # Modules
     def test_modules(self):
         expected_output = {
             'missing': [
                 'iptable_filter',
-                'br_netfilter',
                 'iptable_nat',
-                'ebtables'
+                'ebtables',
+                'bridge'
             ],
             'enabled': ['overlay']
         }
@@ -339,12 +397,24 @@ class TestSystemProfile(TestCase):
         )
 
     # System Compatability
-    def test_system_compatability(self):
+    def test_system_compatability_fail(self):
         expected_output = {
             'OS': 'PASS',
             'version': 'FAIL'
         }
         returns = profile.check_system_type('suse', '15', True)
+        self.assertEquals(
+            expected_output,
+            returns,
+            'Returned values did not match expected output'
+        )
+
+    def test_system_compatability_pass(self):
+        expected_output = {
+            'OS': 'PASS',
+            'version': 'PASS'
+        }
+        returns = profile.check_system_type('rhel', '7.5', True)
         self.assertEquals(
             expected_output,
             returns,
@@ -512,7 +582,7 @@ class TestSystemProfile(TestCase):
         mock_response.side_effect = [
             b'net.bridge.bridge-nf-call-ip6tables = 0',
             b'net.bridge.bridge-nf-call-iptables = 0',
-            b'fs.may_detach_mounts = 0',
+            b'',
             b'net.ipv4.ip_forward = 1'
         ]
         with mock.patch(
