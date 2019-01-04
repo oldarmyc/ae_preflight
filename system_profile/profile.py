@@ -71,6 +71,7 @@ def execute_command(command, verbose):
     """
     if verbose:
         print('Executing command: "{0}"'.format(' '.join(command)))
+
     p = Popen(command, stdout=PIPE, stderr=PIPE, stdin=PIPE)
     out, err = p.communicate()
     if p.returncode != 0 and verbose:
@@ -80,6 +81,7 @@ def execute_command(command, verbose):
                 err.decode('utf-8')
             )
         )
+
     return out
 
 
