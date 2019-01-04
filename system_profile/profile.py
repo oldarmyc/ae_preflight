@@ -101,10 +101,10 @@ def check_for_socket(interface, port, verbose):
     return port_status
 
 
-def get_active_interfaces():
+def get_active_interfaces(devices_file):
     interfaces = []
     skip_interfaces = ['veth', 'flannel', 'docker', 'lo']
-    with open('/proc/net/dev') as f:
+    with open(devices_file) as f:
         temp = f.readline()
         while temp:
             # Run regex search to grab interface name
@@ -310,21 +310,16 @@ def check_system_type(based_on, version, verbose):
     return supported
 
 
-def selinux(verbose):
+def selinux(selinux_config, verbose):
     """
     Check selinux and make sure it is in a good state
     """
     if verbose:
         print('Checking selinux status and configuration')
 
-    try:
-        value = execute_command(['getenforce'], verbose)
-    except Exception:
-        # Log things here
-        return
-
+    value = execute_command(['getenforce'], verbose)
     config_option = 'disabled'
-    with open('/etc/selinux/config') as f:
+    with open(selinux_config) as f:
         temp = f.readline()
         while temp:
             search = re.search(r'^SELINUX=(.*)$', temp)
@@ -368,16 +363,16 @@ def check_for_agents(verbose):
     return agent_results
 
 
-def inspect_resolv_conf(verbose):
+def inspect_resolv_conf(resolv_conf_location, verbose):
     """
     Ensure that resolv.conf does not have anything that might interfere
     with kubernetes
     """
     all_options = []
     if verbose:
-        print('Checking /etc/resolv.conf')
+        print('Checking {0}'.format(resolv_conf_location))
 
-    with open('/etc/resolv.conf') as f:
+    with open(resolv_conf_location) as f:
         temp = f.readline()
         while temp:
             domains = re.search(r'^search\s(.*)$', temp)
@@ -407,7 +402,7 @@ def check_open_ports(interface, verbose):
         if verbose:
             print('Checking ports on all active interfaces')
 
-        interfaces = get_active_interfaces()
+        interfaces = get_active_interfaces('/proc/net/dev')
 
     for interface in interfaces:
         ip_address = get_interface_ip_address(interface, verbose)
@@ -420,12 +415,12 @@ def check_open_ports(interface, verbose):
     return open_ports
 
 
-def suse_infinity_check(verbose):
+def suse_infinity_check(system_file, verbose):
     infinity_set = False
     if verbose:
-        print('Checking sysctl setting for Suse Linux')
+        print('Checking setting for Suse Linux in {0}'.format(system_file))
 
-    with open('/etc/systemd/system.conf') as f:
+    with open(system_file) as f:
         temp = f.readline()
         while temp:
             infinity_check = re.search(r'^DefaultTasksMax=infinity', temp)
@@ -824,7 +819,10 @@ def main():
     )
     system_info['resources'] = system_requirements(args.verbose)
     system_info['mounts'] = mounts_check(args.verbose)
-    system_info['resolv'] = inspect_resolv_conf(args.verbose)
+    system_info['resolv'] = inspect_resolv_conf(
+        '/etc/resolv.conf',
+        args.verbose
+    )
     system_info['ports'] = check_open_ports(args.interface, args.verbose)
     system_info['agents'] = check_for_agents(args.verbose)
     system_info['modules'] = check_modules(
@@ -834,11 +832,14 @@ def main():
     )
 
     if system_info.get('profile').get('based_on').lower() == 'rhel':
-        system_info['selinux'] = selinux(args.verbose)
+        system_info['selinux'] = selinux('/etc/selinux/config', args.verbose)
 
     system_info['infinity_set'] = None
     if system_info.get('profile').get('distribution').lower() == 'suse':
-        system_info['infinity_set'] = suse_infinity_check(args.verbose)
+        system_info['infinity_set'] = suse_infinity_check(
+            '/etc/systemd/system.conf',
+            args.verbose
+        )
 
     system_info['sysctl'] = check_sysctl(args.verbose)
     overall_result = process_results(system_info)
