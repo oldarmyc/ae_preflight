@@ -132,8 +132,10 @@ def get_interface_ip_address(interface, verbose):
     temp_info = execute_command(['ip', 'addr', 'show', interface], verbose)
 
     # Decode the info and get out the IP address
-    ip_address = temp_info.decode('utf-8').split('inet ')[1].split('/')[0]
+    if type(temp_info) == bytes:
+        temp_info = temp_info.decode('utf-8')
 
+    ip_address = temp_info.split('inet ')[1].split('/')[0]
     return ip_address
 
 
