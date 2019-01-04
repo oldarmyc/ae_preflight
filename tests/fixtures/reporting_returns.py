@@ -134,6 +134,13 @@ def resolv_conf(test_pass=True):
     }
 
 
+def resolv_conf_warn():
+    return {
+        'search_domains': ['test.domain', 'another.domain'],
+        'options': ['rotate']
+    }
+
+
 def ports(test_pass=True):
     if test_pass:
         return {
