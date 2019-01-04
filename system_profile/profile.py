@@ -536,6 +536,7 @@ def process_results(system_info):
         mounts = system_info['mounts']
         f.write('\nMounts\n')
         overall_mount_result = 'WARN'
+        ftype_incorrect = False
         for mount, mount_data in mounts.items():
             mount_result = 'WARN'
             f.write('Mount Point:  {0}\n'.format(mount))
@@ -571,6 +572,8 @@ def process_results(system_info):
                     # Ensure that the ftype was set correctly
                     if mount_data.get('ftype') == '1':
                         mount_result = 'PASS'
+                    else:
+                        ftype_incorrect = True
                 else:
                     mount_result = 'PASS'
 
@@ -584,10 +587,7 @@ def process_results(system_info):
                 'on the mount after formatting. Confirm that the size is '
                 'close to the requested size before proceeding.\n\n'
             )
-            if (
-                mount_data.get('file_system') == 'xfs' and
-                mount_data.get('ftype') != '1'
-            ):
+            if ftype_incorrect:
                 f.write(
                     'Note: XFS file system should be formatted with the '
                     'option ftype=1 in order to support the overlay driver '
