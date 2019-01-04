@@ -549,7 +549,7 @@ def process_results(system_info):
             )
 
             f.write(
-                'Free:         {0} GB\n\n'.format(mount_data.get('free'))
+                'Free:         {0} GB\n'.format(mount_data.get('free'))
             )
             f.write(
                 'File System:  {0}\n'.format(
@@ -732,7 +732,7 @@ def process_results(system_info):
 
             f.write(
                 '\nHOW TO\nTo enable a module you can do the following as '
-                'root:\nmodprobe MODEULE_NAME\n\nTo persist through a reboot '
+                'root:\nmodprobe MODULE_NAME\n\nTo persist through a reboot '
                 'do the following as root:\necho -e "MODULE_NAME" > '
                 '/etc/modules-load.d/MODULE_NAME.conf\n'
             )
