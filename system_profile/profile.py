@@ -226,8 +226,9 @@ def mounts_check(verbose):
 
     for mount in psutil.disk_partitions():
         if (
-            'var' in mount.mountpoint or
-            'opt' in mount.mountpoint or
+            '/var' in mount.mountpoint or
+            '/opt' in mount.mountpoint or
+            '/tmp' in mount.mountpoint or
             mount.mountpoint == '/'
         ):
             found_mounts[mount.mountpoint] = {
@@ -243,22 +244,34 @@ def mounts_check(verbose):
         mounts[mountpoint]['total'] = round((temp_usage.total / 1024.0**3), 2)
         mounts[mountpoint]['mount_options'] = mount_data.get('options')
         mounts[mountpoint]['file_system'] = mount_data.get('file_system')
-        if 'tmp' in mountpoint:
+        if '/tmp' in mountpoint:
             mounts[mountpoint]['recommended'] = 30.0
-        elif 'var' in mountpoint:
+        elif '/var' in mountpoint:
             mounts[mountpoint]['recommended'] = 100.0
-        elif 'opt' in mountpoint:
+        elif '/opt' in mountpoint:
             mounts[mountpoint]['recommended'] = 100.0
-        else:
-            mounts[mountpoint]['recommended'] = 230.0
 
         if mount_data.get('file_system') == 'xfs':
             mount_info = execute_command(['xfs_info', mountpoint], verbose)
-            ftype_test = re.search(r'ftype=(\d)', mount_info)
+            ftype_test = re.search(r'ftype=(\d)', mount_info.decode('utf-8'))
             if ftype_test:
                 mounts[mountpoint]['ftype'] = ftype_test.group(1)
             else:
                 mounts[mountpoint]['ftype'] = 'UNK'
+
+        # Fix root here
+        root_total = 230.0
+        for mount, _ in found_mounts.items():
+            if '/tmp' in mount:
+                root_total -= 30.0
+
+            if '/var' in mount:
+                root_total -= 100.0
+
+            if '/opt' in mount:
+                root_total -= 100.0
+
+        mounts['/']['recommended'] = root_total
 
     return mounts
 
@@ -351,11 +364,13 @@ def check_for_agents(verbose):
         try:
             temp_process = psutil.Process(pid)
             for agent in RUNNING_AGENTS:
-                if agent in temp_process.name().lower():
-                    if temp_process.name() not in found_agents:
-                        found_agents.append(temp_process.name())
-
+                if (
+                    agent in temp_process.name().lower() and
+                    temp_process.name() not in found_agents
+                ):
+                    found_agents.append(temp_process.name())
                     break
+
         except Exception:
             # Pids can be gone after gathering them all due to short
             # lived processes. Catching those and moving to the next pid
