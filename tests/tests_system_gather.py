@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 from .fixtures import command_returns
 from system_profile import profile
 
