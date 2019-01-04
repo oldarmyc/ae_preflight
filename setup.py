@@ -17,7 +17,7 @@ else:
 
 
 setuptools.setup(
-    name='aeprofile',
+    name='ae-profile',
     version='0.1.0',
     url='https://github.com/oldarmyc/ae_preflight.git',
     license='Apache License, Version 2.0',
@@ -37,6 +37,7 @@ setuptools.setup(
             'ae-profile=system_profile.profile:main'
         ]
     },
+    packages=['system_profile'],
     classifiers=[
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
