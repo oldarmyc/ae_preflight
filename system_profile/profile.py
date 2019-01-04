@@ -259,20 +259,18 @@ def mounts_check(verbose):
             else:
                 mounts[mountpoint]['ftype'] = 'UNK'
 
-        # Fix root here
-        root_total = 230.0
-        for mount, _ in found_mounts.items():
-            if '/tmp' in mount:
-                root_total -= 30.0
+    # Update root requirement
+    for mount, _ in found_mounts.items():
+        if '/tmp' in mount:
+            root_total -= 30.0
 
-            if '/var' in mount:
-                root_total -= 100.0
+        if '/var' in mount:
+            root_total -= 100.0
 
-            if '/opt' in mount:
-                root_total -= 100.0
+        if '/opt' in mount:
+            root_total -= 100.0
 
-        mounts['/']['recommended'] = root_total
-
+    mounts['/']['recommended'] = root_total
     return mounts
 
 
