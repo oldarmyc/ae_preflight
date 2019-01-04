@@ -17,13 +17,15 @@ else:
 
 
 setuptools.setup(
-    name='aepreflight',
+    name='aeprofile',
     version='0.1.0',
     url='https://github.com/oldarmyc/ae_preflight.git',
     license='Apache License, Version 2.0',
     author='Dave Kludt',
     author_email='dkludt@anaconda.com',
-    description='Library to run preflight checks before installing AE',
+    description=(
+        'Library to run preflight checks before installing Anaconda Enterprise'
+    ),
     zip_safe=False,
     platforms='any',
     install_requires=requirements,
