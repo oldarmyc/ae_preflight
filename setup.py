@@ -30,6 +30,11 @@ setuptools.setup(
     extras_require={
         'tests': test_requirements
     },
+    entry_points={
+        'console_scripts': [
+            'ae-profile=system_profile.profile:main'
+        ]
+    },
     classifiers=[
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
