@@ -260,6 +260,7 @@ def mounts_check(verbose):
                 mounts[mountpoint]['ftype'] = 'UNK'
 
     # Update root requirement
+    root_total = 230.0
     for mount, _ in found_mounts.items():
         if '/tmp' in mount:
             root_total -= 30.0
