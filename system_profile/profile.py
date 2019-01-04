@@ -285,10 +285,10 @@ def check_modules(distro, version, verbose):
         print('Checking for enabled modules based on distro and version')
 
     if (
-        MODULE_EXCEPTIONS.get('distro') and
-        MODULE_EXCEPTIONS.get('distro').get('version')
+        MODULE_EXCEPTIONS.get(distro) and
+        MODULE_EXCEPTIONS.get(distro).get(version)
     ):
-        modules = MODULE_EXCEPTIONS.get('distro').get('version')
+        modules = MODULE_EXCEPTIONS.get(distro).get(version)
 
     missing = []
     enabled = []
