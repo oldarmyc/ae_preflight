@@ -741,7 +741,7 @@ def process_results(system_info):
         f.write('---------------------------------------------------------\n')
 
         # Suse Infinity
-        if system_info.get('profile').get('distribution').lower() == 'suse':
+        if system_info.get('profile').get('distribution').lower() == 'sles':
             infinity = system_info['infinity_set']
             infinity_result = 'FAIL'
             f.write('\nInfinty Max Tasks\n')
@@ -852,7 +852,7 @@ def main():
         system_info['selinux'] = selinux('/etc/selinux/config', args.verbose)
 
     system_info['infinity_set'] = None
-    if system_info.get('profile').get('distribution').lower() == 'suse':
+    if system_info.get('profile').get('distribution').lower() == 'sles':
         system_info['infinity_set'] = suse_infinity_check(
             '/etc/systemd/system.conf',
             args.verbose
